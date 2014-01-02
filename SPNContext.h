@@ -25,6 +25,9 @@
 // the default is the backing SpnContext structure
 @property (nonatomic) void *userInfo;
 
+// YES if the last error was a runtime error, NO otherwise (syntax/semantic error)
+@property (nonatomic, readonly) BOOL isRuntimeError;
+
 // returns a new autoreleased context instance
 + (id)context;
 

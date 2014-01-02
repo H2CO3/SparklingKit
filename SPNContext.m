@@ -46,6 +46,11 @@
 	spn_vm_setcontext(context->vm, info);
 }
 
+- (BOOL)isRuntimeError
+{
+	return context->errmsg == spn_vm_errmsg(context->vm);
+}
+
 //////////
 
 + (id)context
@@ -89,7 +94,7 @@
 - (id)executeBytecode:(NSData *)bc
 {
 	SpnValue retval;
-	if (spn_ctx_execbytecode(context, (spn_uword *)bc.bytes, &retval) != 0) {
+	if (spn_ctx_execbytecode(context, (spn_uword *)[bc bytes], &retval) != 0) {
 		return nil;
 	}
 
@@ -170,13 +175,14 @@
 - (id)callFunction:(SPNValue *)func withArguments:(NSArray *)args
 {
 	SpnValue *argv = malloc(args.count * sizeof(argv[0]));
-	SpnValue retVal, funcVal = func.spnValue;
+	SpnValue *funcVal = func.spnValue;
+	SpnValue retVal;
 
 	for (size_t i = 0; i < args.count; i++) {
 		argv[i] = [SPNValue spnValueWithCocoaObject:args[i]];
 	}
 
-	spn_vm_callfunc(context->vm, &funcVal, &retVal, args.count, argv);
+	spn_vm_callfunc(context->vm, funcVal, &retVal, args.count, argv);
 
 	for (size_t i = 0; i < args.count; i++) {
 		spn_value_release(&argv[i]);

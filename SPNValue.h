@@ -12,12 +12,14 @@
 
 #import <Foundation/Foundation.h>
 
-@interface SPNValue: NSValue {
-	NSValue *helper;
+@interface SPNValue: NSObject <NSCopying> {
+	SpnValue value;
 }
 
 // simple getter (non-owning)
-@property (nonatomic, readonly) SpnValue spnValue;
+// this is non-const only to enable retaining and releasing the
+// backing value object, DO NOT MODIFY IT in any other manner
+@property (nonatomic, readonly) SpnValue *spnValue;
 
 // should be spn_value_release()'d when you're done
 // returns an owning SpnValue structure, so it

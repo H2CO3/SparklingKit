@@ -26,7 +26,10 @@ int main(int argc, char *argv[])
 		if (obj) {
 			NSLog(@">>> %@", obj);
 		} else {
-			NSLog(@"%@\nCall stack: %@", ctx.lastError, [ctx stackTrace]);
+			NSLog(@"%@", ctx.lastError);
+			if (ctx.isRuntimeError) {
+				NSLog(@"Stack trace: %@", [ctx stackTrace]);
+			}
 		}
 
 		printf("$ ");

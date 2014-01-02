@@ -136,9 +136,9 @@
 
 		return (SpnValue){ .v.ptrv = arr, .t = SPN_TYPE_ARRAY, .f = SPN_TFLG_OBJECT };
 	} else if ([obj isKindOfClass:[SPNValue class]]) {
-		SpnValue val = [obj spnValue];
-		spn_value_retain(&val);
-		return val;
+		SpnValue *val = [obj spnValue];
+		spn_value_retain(val);
+		return *val;
 	} else {
 		[NSException raise:@"SPNTypeException"
 			    format:@"Object of class %@ cannot be converted to an SpnValue",
@@ -153,67 +153,60 @@
 	return [[[self alloc] initWithSpnValue:val] autorelease];
 }
 
-- (id)initWithBytes:(const void *)bytes objCType:(const char *)type
-{
-	if (self = [self init]) {
-		helper = [[NSValue alloc] initWithBytes:bytes objCType:type];
-	}
-
-	return self;
-}
-
-- (const char *)objCType
-{
-	return helper.objCType;
-}
-
-- (void)getValue:(void *)outVal
-{
-	[helper getValue:outVal];
-}
-
-- (NSString *)description
-{
-	SpnValue val = self.spnValue;
-	switch (val.t) {
-	case SPN_TYPE_FUNC:
-		return [NSString stringWithFormat:@"<SPNValue: function %@ { kind: %s }>",
-			val.v.fnv.name ? [NSString stringWithFormat:@"%s()", val.v.fnv.name] : @"<lambda>",
-			val.f & SPN_TFLG_NATIVE ? "native" : "script"];
-	case SPN_TYPE_USRDAT:
-		return [NSString stringWithFormat:@"<SPNValue: user data (%p)>", val.v.ptrv];
-	default:
-		return [[[self class] cocoaObjectWithSpnValue:&val] description];
-	}
-}
-
-- (id)forwardingTargetForSelector:(SEL)aSelector
-{
-	return helper;
-}
-
 - (id)initWithSpnValue:(SpnValue *)val
 {
-	if (self = [self initWithBytes:val objCType:@encode(SpnValue)]) {
+	if (self = [super init]) {
 		spn_value_retain(val);
+		value = *val;
 	}
 	return self;
 }
 
 - (void)dealloc
 {
-	SpnValue val;
-	[helper getValue:&val];
-	spn_value_release(&val);
-	[helper release];
+	spn_value_release(&value);
 	[super dealloc];
 }
 
-- (SpnValue)spnValue
+- (SpnValue *)spnValue
 {
-	SpnValue val;
-	[helper getValue:&val];
-	return val;
+	return &value;
+}
+
+- (NSString *)description
+{
+	switch (value.t) {
+	case SPN_TYPE_FUNC:
+		return [NSString stringWithFormat:@"<SPNValue: function %@ { kind: %s }>",
+			value.v.fnv.name ? [NSString stringWithFormat:@"%s()", value.v.fnv.name] : @"<lambda>",
+			value.f & SPN_TFLG_NATIVE ? "native" : "script"];
+	case SPN_TYPE_USRDAT:
+		return [NSString stringWithFormat:@"<SPNValue: user data (%p)>", value.v.ptrv];
+	default:
+		return [[[self class] cocoaObjectWithSpnValue:&value] description];
+	}
+}
+
+// NSCopying
+
+- (id)copyWithZone:(NSZone *)zone
+{
+	return [self retain]; // we're an immutable class
+}
+
+- (BOOL)isEqual:(id)other
+{
+	if ([other isKindOfClass:[SPNValue class]]) {
+		SpnValue *otherValue = [other spnValue];
+		return spn_value_equal(&value, otherValue);
+	}
+
+	return NO;
+}
+
+- (NSUInteger)hash
+{
+	return spn_hash_object(&value);
 }
 
 @end
